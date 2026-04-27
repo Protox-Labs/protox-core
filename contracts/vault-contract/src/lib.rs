@@ -5,6 +5,13 @@ mod errors;
 mod events;
 mod storage;
 
+use crate::storage::{
+    get_admin, get_token, get_total_shares, get_user_balance, get_reward_per_share,
+    get_user_reward_debt, set_admin, set_token, set_total_shares, set_user_balance,
+    set_reward_per_share, set_user_reward_debt,
+    is_paused, set_paused,  // add these
+};
+
 use crate::errors::VaultError;
 use crate::storage::{
     get_admin, get_token, get_total_shares, get_user_balance, get_reward_per_share,
@@ -69,40 +76,33 @@ impl VaultContract {
 
     /// Withdraws tokens from the vault.
     pub fn withdraw(e: Env, user: Address, amount: i128) -> Result<(), VaultError> {
-        user.require_auth();
+    user.require_auth();
 
-        if amount <= 0 {
-            return Err(VaultError::NegativeAmount);
-        }
+    if amount <= 0 {
+        return Err(VaultError::NegativeAmount);
+    }
 
-        let user_balance = get_user_balance(&e, &user);
-        if user_balance < amount {
-            return Err(VaultError::InsufficientBalance);
-        }
-
-        let token_address = get_token(&e).ok_or(VaultError::NotInitialized)?;
-        let token_client = token::Client::new(&e, &token_address);
-
-        token_client.transfer(&e.current_contract_address(), &user, &amount);
-
-        let total_shares = get_total_shares(&e);
-        set_user_balance(&e, &user, user_balance - amount);
-        set_total_shares(&e, total_shares - amount);
-
-        // Update reward debt
-        let reward_per_share = get_reward_per_share(&e);
-        let new_debt = (user_balance - amount) * reward_per_share / 1_000_000_000;
-        set_user_reward_debt(&e, &user, new_debt);
-
-        let balance: i128 = env
-        .storage()
-        .persistent()
-        .get(&user)
-        .unwrap_or(0);
-
-    if amount > balance {
+    let user_balance = get_user_balance(&e, &user);
+    if user_balance < amount {
         return Err(VaultError::InsufficientBalance);
     }
+
+    let token_address = get_token(&e).ok_or(VaultError::NotInitialized)?;
+    let token_client = token::Client::new(&e, &token_address);
+
+    token_client.transfer(&e.current_contract_address(), &user, &amount);
+
+    let total_shares = get_total_shares(&e);
+    set_user_balance(&e, &user, user_balance - amount);
+    set_total_shares(&e, total_shares - amount);
+
+    let reward_per_share = get_reward_per_share(&e);
+    let new_debt = (user_balance - amount) * reward_per_share / 1_000_000_000;
+    set_user_reward_debt(&e, &user, new_debt);
+
+    events::withdraw(&e, user, amount);
+    Ok(())
+}
 
     // deduct balance
     env.storage()

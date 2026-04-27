@@ -11,4 +11,6 @@ pub enum VaultError {
     Unauthorized = 5,
     InvalidToken = 6,
     RewardCalculationError = 7,
+    ZeroDepositAmount = 8,   // from issue #2
+    ContractPaused = 9,      // new for #16
 }

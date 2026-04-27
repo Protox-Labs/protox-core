@@ -75,5 +75,15 @@ pub fn set_user_reward_debt(e: &Env, user: &Address, debt: i128) {
         .set(&DataKey::UserRewardDebt(user.clone()), &debt);
 }
 
+const PAUSED_KEY: &str = "paused";
+
+pub fn is_paused(e: &Env) -> bool {
+    e.storage().instance().get(&PAUSED_KEY).unwrap_or(false)
+}
+
+pub fn set_paused(e: &Env, paused: bool) {
+    e.storage().instance().set(&PAUSED_KEY, &paused);
+}
+
 // TODO: Implement more efficient storage patterns for large numbers of users
 // TODO: Add support for different storage types (temporary vs persistent)
