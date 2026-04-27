@@ -11,6 +11,24 @@ pub enum DataKey {
     UserRewardDebt(Address),
 }
 
+const COOLDOWN_SECS: u64 = 86_400; // 24 hours
+const DEPOSIT_TIME_KEY: &str = "dep_time";
+
+pub fn set_deposit_timestamp(e: &Env, user: &Address) {
+    let key = (DEPOSIT_TIME_KEY, user.clone());
+    e.storage().persistent().set(&key, &e.ledger().timestamp());
+}
+
+pub fn get_deposit_timestamp(e: &Env, user: &Address) -> u64 {
+    let key = (DEPOSIT_TIME_KEY, user.clone());
+    e.storage().persistent().get(&key).unwrap_or(0)
+}
+
+pub fn cooldown_met(e: &Env, user: &Address) -> bool {
+    let deposited_at = get_deposit_timestamp(e, user);
+    e.ledger().timestamp() >= deposited_at + COOLDOWN_SECS
+}
+
 pub fn get_admin(e: &Env) -> Option<Address> {
     e.storage().instance().get(&DataKey::Admin)
 }

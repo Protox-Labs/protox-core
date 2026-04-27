@@ -5,18 +5,13 @@ mod errors;
 mod events;
 mod storage;
 
-use crate::storage::{
-    get_admin, get_token, get_total_shares, get_user_balance, get_reward_per_share,
-    get_user_reward_debt, set_admin, set_token, set_total_shares, set_user_balance,
-    set_reward_per_share, set_user_reward_debt,
-    is_paused, set_paused,  // add these
-};
-
 use crate::errors::VaultError;
 use crate::storage::{
     get_admin, get_token, get_total_shares, get_user_balance, get_reward_per_share,
     get_user_reward_debt, set_admin, set_token, set_total_shares, set_user_balance,
     set_reward_per_share, set_user_reward_debt,
+    is_paused, set_paused,
+    set_deposit_timestamp, cooldown_met,
 };
 
 #[contract]
@@ -69,6 +64,7 @@ impl VaultContract {
         let reward_per_share = get_reward_per_share(&e);
         let new_debt = (user_balance + amount) * reward_per_share / 1_000_000_000;
         set_user_reward_debt(&e, &user, new_debt);
+        set_deposit_timestamp(&e, &user);
 
         events::deposit(&e, user, amount);
         Ok(())
@@ -77,6 +73,10 @@ impl VaultContract {
     /// Withdraws tokens from the vault.
     pub fn withdraw(e: Env, user: Address, amount: i128) -> Result<(), VaultError> {
     user.require_auth();
+
+    if !cooldown_met(&e, &user) {
+    return Err(VaultError::CooldownNotMet);
+}
 
     if amount <= 0 {
         return Err(VaultError::NegativeAmount);
