@@ -35,9 +35,10 @@ impl VaultContract {
     pub fn deposit(e: Env, user: Address, amount: i128) -> Result<(), VaultError> {
         user.require_auth();
 
-        if amount <= 0 {
-            return Err(VaultError::NegativeAmount);
-        }
+         if amount <= 0 {
+        return Err(VaultError::ZeroDepositAmount);
+    }
+
 
         let token_address = get_token(&e).ok_or(VaultError::NotInitialized)?;
         let token_client = token::Client::new(&e, &token_address);
@@ -178,6 +179,15 @@ impl VaultContract {
     #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum VaultError {
+    InsufficientBalance = 101, // from issue #3
+    ZeroDepositAmount   = 102, // new
+}
+
 pub enum VaultError {
     // ...existing errors...
     InsufficientBalance = 101, // pick the next available number
