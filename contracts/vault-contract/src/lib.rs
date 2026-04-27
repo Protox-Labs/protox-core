@@ -93,6 +93,34 @@ impl VaultContract {
         let new_debt = (user_balance - amount) * reward_per_share / 1_000_000_000;
         set_user_reward_debt(&e, &user, new_debt);
 
+        let balance: i128 = env
+        .storage()
+        .persistent()
+        .get(&user)
+        .unwrap_or(0);
+
+    if amount > balance {
+        return Err(VaultError::InsufficientBalance);
+    }
+
+    // deduct balance
+    env.storage()
+        .persistent()
+        .set(&user, &(balance - amount));let balance: i128 = env
+        .storage()
+        .persistent()
+        .get(&user)
+        .unwrap_or(0);
+
+    if amount > balance {
+        return Err(VaultError::InsufficientBalance);
+    }
+
+    // deduct balance
+    env.storage()
+        .persistent()
+        .set(&user, &(balance - amount));
+
         events::withdraw(&e, user, amount);
         Ok(())
     }
@@ -146,6 +174,14 @@ impl VaultContract {
     pub fn get_total_shares(e: Env) -> i128 {
         get_total_shares(&e)
     }
+
+    #[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum VaultError {
+    // ...existing errors...
+    InsufficientBalance = 101, // pick the next available number
+}
 
     // TODO: Implement reward claiming logic
     // TODO: Add support for multiple tokens for rewards
