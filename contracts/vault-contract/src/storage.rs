@@ -9,6 +9,7 @@ pub enum DataKey {
     TotalShares,
     RewardPerShare,
     UserRewardDebt(Address),
+    VaultCapacity,
 }
 
 const COOLDOWN_SECS: u64 = 86_400; // 24 hours
@@ -93,15 +94,10 @@ pub fn set_user_reward_debt(e: &Env, user: &Address, debt: i128) {
         .set(&DataKey::UserRewardDebt(user.clone()), &debt);
 }
 
-const PAUSED_KEY: &str = "paused";
-
-pub fn is_paused(e: &Env) -> bool {
-    e.storage().instance().get(&PAUSED_KEY).unwrap_or(false)
+pub fn get_vault_capacity(e: &Env) -> Option<i128> {
+    e.storage().instance().get(&DataKey::VaultCapacity)
 }
 
-pub fn set_paused(e: &Env, paused: bool) {
-    e.storage().instance().set(&PAUSED_KEY, &paused);
+pub fn set_vault_capacity(e: &Env, capacity: i128) {
+    e.storage().instance().set(&DataKey::VaultCapacity, &capacity);
 }
-
-// TODO: Implement more efficient storage patterns for large numbers of users
-// TODO: Add support for different storage types (temporary vs persistent)
