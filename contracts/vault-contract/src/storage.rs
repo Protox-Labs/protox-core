@@ -9,6 +9,7 @@ pub enum DataKey {
     TotalShares,
     RewardPerShare,
     UserRewardDebt(Address),
+    VaultCapacity,
 }
 
 pub fn get_admin(e: &Env) -> Option<Address> {
@@ -75,5 +76,10 @@ pub fn set_user_reward_debt(e: &Env, user: &Address, debt: i128) {
         .set(&DataKey::UserRewardDebt(user.clone()), &debt);
 }
 
-// TODO: Implement more efficient storage patterns for large numbers of users
-// TODO: Add support for different storage types (temporary vs persistent)
+pub fn get_vault_capacity(e: &Env) -> Option<i128> {
+    e.storage().instance().get(&DataKey::VaultCapacity)
+}
+
+pub fn set_vault_capacity(e: &Env, capacity: i128) {
+    e.storage().instance().set(&DataKey::VaultCapacity, &capacity);
+}
