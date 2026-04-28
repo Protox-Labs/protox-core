@@ -39,9 +39,10 @@ impl VaultContract {
     pub fn deposit(e: Env, user: Address, amount: i128) -> Result<(), VaultError> {
         user.require_auth();
 
-        if amount <= 0 {
-            return Err(VaultError::NegativeAmount);
-        }
+         if amount <= 0 {
+        return Err(VaultError::ZeroDepositAmount);
+    }
+
 
         // Fix #13: Check vault capacity before accepting deposit
         let total_shares = get_total_shares(&e);
@@ -66,6 +67,7 @@ impl VaultContract {
         let reward_per_share = get_reward_per_share(&e);
         let new_debt = new_balance * reward_per_share / PRECISION;
         set_user_reward_debt(&e, &user, new_debt);
+        set_deposit_timestamp(&e, &user);
 
         events::deposit(&e, user, amount);
         Ok(())
@@ -73,21 +75,23 @@ impl VaultContract {
 
     /// Withdraws tokens from the vault.
     pub fn withdraw(e: Env, user: Address, amount: i128) -> Result<(), VaultError> {
-        user.require_auth();
+    user.require_auth();
 
-        if amount <= 0 {
-            return Err(VaultError::NegativeAmount);
-        }
+    if !cooldown_met(&e, &user) {
+    return Err(VaultError::CooldownNotMet);
+}
 
-        let user_balance = get_user_balance(&e, &user);
-        if user_balance < amount {
-            return Err(VaultError::InsufficientBalance);
-        }
+    if amount <= 0 {
+        return Err(VaultError::NegativeAmount);
+    }
 
-        let token_address = get_token(&e).ok_or(VaultError::NotInitialized)?;
-        let token_client = token::Client::new(&e, &token_address);
+    let user_balance = get_user_balance(&e, &user);
+    if user_balance < amount {
+        return Err(VaultError::InsufficientBalance);
+    }
 
-        token_client.transfer(&e.current_contract_address(), &user, &amount);
+    let token_address = get_token(&e).ok_or(VaultError::NotInitialized)?;
+    let token_client = token::Client::new(&e, &token_address);
 
         let total_shares = get_total_shares(&e);
         let new_balance = user_balance - amount;
