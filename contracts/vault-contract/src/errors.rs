@@ -11,4 +11,6 @@ pub enum VaultError {
     Unauthorized = 5,
     InvalidToken = 6,
     RewardCalculationError = 7,
+    CapacityExceeded = 8,
+    NoRewardsToClaim = 9,
 }
